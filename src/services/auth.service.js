@@ -6,33 +6,32 @@ const {
 
 class AuthService {
   // ===== ĐĂNG KÝ =====
-    static async register(data) {
+  static async register(data) {
     const { username, email, password, role } = data;
 
     const existed = await User.findOne({
-        $or: [{ email }, { username }],
+      $or: [{ email }, { username }],
     });
     if (existed) throw new Error("Tài khoản đã tồn tại");
 
     const user = await User.create({
-        username,
-        email,
-        password, //  dạng thường
-        role: role || "user", //  cho phép admin
+      username,
+      email,
+      password, // ✅ LƯU DẠNG THƯỜNG
+      role: role || "user",
     });
 
     return user;
-    }
+  }
 
 
-  // ===== ĐĂNG NHẬP =====
+    // ===== ĐĂNG NHẬP =====
   static async login(data) {
     const { email, password } = data;
 
     const user = await User.findOne({ email });
     if (!user) throw new Error("Email không tồn tại");
 
-    // ❗ So sánh trực tiếp
     if (password !== user.password) {
       throw new Error("Mật khẩu không đúng");
     }
@@ -49,6 +48,8 @@ class AuthService {
       refreshToken,
     };
   }
+
+
 
   // ===== ĐĂNG XUẤT =====
   static async logout(userId) {
