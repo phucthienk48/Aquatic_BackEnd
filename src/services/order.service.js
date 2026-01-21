@@ -2,13 +2,13 @@ const Order = require("../models/order.model");
 const Cart = require("../models/cart.model");
 
 const createOrder = async ({
-  userId,
+  user,               // 👈 đổi userId → user
   paymentMethod,
   shippingAddress,
 }) => {
-  if (!userId) throw new Error("Missing userId");
+  if (!user) throw new Error("Missing user");
 
-  const cart = await Cart.findOne({ user: userId });
+  const cart = await Cart.findOne({ user });
 
   if (!cart || cart.items.length === 0)
     throw new Error("Cart is empty");
@@ -18,7 +18,7 @@ const createOrder = async ({
     name: item.name,
     price: item.price,
     quantity: item.quantity,
-    image: item.image, // 🔥 RẤT QUAN TRỌNG
+    image: item.image,
   }));
 
   const totalPrice = items.reduce(
@@ -27,20 +27,18 @@ const createOrder = async ({
   );
 
   const order = await Order.create({
-    user: userId,
+    user,
     items,
     totalPrice,
     paymentMethod,
     shippingAddress,
   });
 
-  // clear cart
   cart.items = [];
   await cart.save();
 
   return order;
 };
-
 
 const getAllOrders = async () => {
   return await Order.find()
@@ -56,9 +54,11 @@ const getOrderById = async (id) => {
 //  NEW: lấy đơn theo userId
 const getOrdersByUserId = async (userId) => {
   return await Order.find({ user: userId })
+    .populate("user", "username email") // 🔥 THÊM DÒNG NÀY
     .populate("items.product")
     .sort({ createdAt: -1 });
 };
+
 
 const updateOrderStatus = async (id, status) => {
   return await Order.findByIdAndUpdate(

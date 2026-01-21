@@ -1,6 +1,6 @@
 const service = require("../services/FishCareKnowledge.service");
 
-// ➕ Create
+//  Create
 exports.create = async (req, res) => {
   try {
     const result = await service.create(req.body);
@@ -10,7 +10,7 @@ exports.create = async (req, res) => {
   }
 };
 
-// 📄 Get all
+//  Get all
 exports.getAll = async (req, res) => {
   try {
     const data = await service.getAll();
@@ -20,7 +20,7 @@ exports.getAll = async (req, res) => {
   }
 };
 
-// 📄 Get by knowledgeId
+//  Get by knowledgeId
 exports.getById = async (req, res) => {
   try {
     const data = await service.getByKnowledgeId(req.params.id);

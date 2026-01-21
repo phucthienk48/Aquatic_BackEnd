@@ -19,6 +19,9 @@ app.use("/api/knowledge", require("./routes/FishCareKnowledge.router"))
 app.use("/api/cart", require("./routes/cart.route"));
 app.use("/api/users", require("./routes/user.routes"))
 app.use("/api/orders", require("./routes/order.router"))
+app.use("/api/shop", require("./routes/shop.route"))
+app.use("/api/contact", require("./routes/contact.route"))
+app.use("/api/comment", require("./routes/comment.route"))
 
 app.get("/", (req, res) => {
   res.send("Aquatic_BackEnd is running 🚀");
