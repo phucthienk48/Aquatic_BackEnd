@@ -14,6 +14,12 @@ const CommentSchema = new mongoose.Schema(
       required: true,
     },
 
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
+    },
+
     content: {
       type: String,
       required: true,
@@ -27,13 +33,17 @@ const CommentSchema = new mongoose.Schema(
       required: true,
     },
 
-    images: [
-      {
-        type: String, // URL hình ảnh
-      },
-    ],
+    images: [String],
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Comment", CommentSchema);
+/*  CHỐNG ĐÁNH GIÁ TRÙNG */
+CommentSchema.index(
+  { user: 1, product: 1, order: 1 },
+  { unique: true }
+);
+
+module.exports =
+  mongoose.models.Comment || mongoose.model("Comment", CommentSchema);
+

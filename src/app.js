@@ -22,9 +22,10 @@ app.use("/api/orders", require("./routes/order.router"))
 app.use("/api/shop", require("./routes/shop.route"))
 app.use("/api/contact", require("./routes/contact.route"))
 app.use("/api/comment", require("./routes/comment.route"))
+app.use("/api/recommend", require("./routes/recommend.routes"));
 
 app.get("/", (req, res) => {
-  res.send("Aquatic_BackEnd is running 🚀");
+  res.send("Aquatic_BackEnd is running ");
 });
 
 module.exports = app;

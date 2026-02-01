@@ -7,22 +7,36 @@ const {
 class AuthService {
   // ===== ĐĂNG KÝ =====
   static async register(data) {
-    const { username, email, password, role } = data;
+    const { username, email, password, role, phone, address } = data;
 
+    // 1️⃣ Kiểm tra trùng email hoặc username
     const existed = await User.findOne({
       $or: [{ email }, { username }],
     });
-    if (existed) throw new Error("Tài khoản đã tồn tại");
 
+    if (existed) {
+      throw new Error("Tài khoản đã tồn tại");
+    }
+
+    // 2️⃣ Tạo user mới
     const user = await User.create({
       username,
       email,
-      password, // ✅ LƯU DẠNG THƯỜNG
+      password,              // ⚠️ nếu có hash ở middleware thì OK
+      phone: phone || "",
+      address: address || "",
+      avatar: "/data/avatar.jpg", // ✅ avatar mặc định
       role: role || "user",
+      isActive: true,
     });
 
-    return user;
+    // 3️⃣ Không trả password ra ngoài
+    const result = user.toObject();
+    delete result.password;
+
+    return result;
   }
+
 
 
     // ===== ĐĂNG NHẬP =====

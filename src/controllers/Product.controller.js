@@ -78,3 +78,22 @@ exports.deleteProduct = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+// 🔎 Search product by keyword
+exports.searchProduct = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword) {
+      return res.json([]);
+    }
+
+    const products = await ProductService.searchProduct(keyword);
+
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

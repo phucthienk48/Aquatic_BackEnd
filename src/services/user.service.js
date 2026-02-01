@@ -12,8 +12,17 @@ exports.createUser = async (data) => {
     throw new Error("Username hoặc Email đã tồn tại");
   }
 
-  const user = await User.create(data);
-  return user;
+  const user = await User.create({
+    username: data.username,
+    email: data.email,
+    password: data.password,
+    role: data.role || "user",
+    avatar: data.avatar,
+    phone: data.phone,
+    address: data.address,
+  });
+
+  return await User.findById(user._id).select("-password");
 };
 
 /* ================= GET ALL ================= */
@@ -30,9 +39,22 @@ exports.getUserById = async (id) => {
 
 /* ================= UPDATE ================= */
 exports.updateUser = async (id, data) => {
-  const user = await User.findByIdAndUpdate(id, data, {
-    new: true,
-  }).select("-password");
+  // Không cho update password ở API này (an toàn hơn)
+  delete data.password;
+
+  const user = await User.findByIdAndUpdate(
+    id,
+    {
+      username: data.username,
+      email: data.email,
+      role: data.role,
+      avatar: data.avatar,
+      phone: data.phone,
+      address: data.address,
+      isActive: data.isActive,
+    },
+    { new: true }
+  ).select("-password");
 
   if (!user) throw new Error("Không tìm thấy user");
   return user;

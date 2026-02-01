@@ -1,76 +1,105 @@
 const commentService = require("../services/comment.service");
+const Order = require("../models/order.model");
+const Comment = require("../models/Comment.model");
 
-/* ===== CREATE COMMENT ===== */
+
+/* ===== CREATE ===== */
 exports.create = async (req, res) => {
   try {
-    const { userId, productId, content, rating, images } = req.body;
+    const { user, product, order, content, rating, images } = req.body;
 
-    if (!userId || !productId || !content) {
+    if (!user || !product || !order || !content) {
       return res.status(400).json({
-        message: "Thiếu userId, productId hoặc content",
+        message: "Thiếu user, product, order hoặc content",
+      });
+    }
+
+    /* chỉ cho comment khi đơn hoàn thành */
+    const foundOrder = await Order.findOne({
+      _id: order,
+      user,
+      status: "hoàn thành",
+    });
+
+    if (!foundOrder) {
+      return res.status(403).json({
+        message: "Chỉ được đánh giá khi đơn hàng hoàn thành",
       });
     }
 
     const comment = await commentService.createComment({
-      user: userId,
-      product: productId,
+      user,
+      product,
+      order,
       content,
-      rating: Number(rating) || 0,
+      rating: Number(rating) || 5,
       images: Array.isArray(images) ? images : [],
     });
 
     res.status(201).json(comment);
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({
+        message: "Bạn đã đánh giá sản phẩm này trong đơn hàng này rồi",
+      });
+    }
     res.status(500).json({ message: err.message });
   }
 };
 
-/* ===== GET COMMENT BY PRODUCT ===== */
+/* ===== GET BY PRODUCT ===== */
 exports.getByProduct = async (req, res) => {
   try {
-    const { productId } = req.params;
+    const comments = await commentService.getByProduct(
+      req.params.productId
+    );
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-    if (!productId) {
-      return res
-        .status(400)
-        .json({ message: "Thiếu productId" });
+/* ===== GET MY COMMENT ===== */
+exports.getMyComment = async (req, res) => {
+  try {
+    const { user, product, order } = req.query;
+
+    if (!user || !product || !order) {
+      return res.status(400).json({ message: "Thiếu tham số" });
     }
 
-    const comments = await commentService.getByProduct(productId);
-    res.json(comments);
+    const comment = await commentService.getMyComment({
+      user,
+      product,
+      order,
+    });
+
+    res.json(comment || null);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-/* ===== GET ALL COMMENTS (ADMIN PAGE) ===== */
-exports.getAll = async (req, res) => {
-  try {
-    const comments = await commentService.getAll();
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
 
-/* ===== UPDATE COMMENT (USER) ===== */
+
+/* ===== UPDATE ===== */
 exports.update = async (req, res) => {
   try {
-    const { content, rating, images } = req.body;
-
     const comment = await commentService.updateComment(
       req.params.id,
       {
-        content,
-        rating: Number(rating) || 0,
-        images: Array.isArray(images) ? images : [],
+        content: req.body.content,
+        rating: Number(req.body.rating) || 5,
+        images: Array.isArray(req.body.images)
+          ? req.body.images
+          : [],
       }
     );
 
     if (!comment) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy bình luận" });
+      return res.status(404).json({
+        message: "Không tìm thấy bình luận",
+      });
     }
 
     res.json(comment);
@@ -79,17 +108,17 @@ exports.update = async (req, res) => {
   }
 };
 
-/* ===== DELETE COMMENT ===== */
-exports.removeByAdmin = async (req, res) => {
+/* ===== DELETE ===== */
+exports.remove = async (req, res) => {
   try {
     const deleted = await commentService.deleteComment(
       req.params.id
     );
 
     if (!deleted) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy bình luận" });
+      return res.status(404).json({
+        message: "Không tìm thấy bình luận",
+      });
     }
 
     res.json({ message: "Đã xóa bình luận" });
@@ -97,3 +126,49 @@ exports.removeByAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+/* ===== GET ALL ===== */
+exports.getAll = async (req, res) => {
+  const products = await Product.find();
+
+  const productIds = products.map(p => p._id);
+
+  const ratings = await Comment.aggregate([
+    { $match: { product: { $in: productIds } } },
+    {
+      $group: {
+        _id: "$product",
+        avgRating: { $avg: "$rating" },
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const ratingMap = {};
+  ratings.forEach(r => {
+    ratingMap[r._id.toString()] = r;
+  });
+
+  const result = products.map(p => ({
+    ...p.toObject(),
+    ratingAvg: ratingMap[p._id]?.avgRating || 0,
+    ratingCount: ratingMap[p._id]?.count || 0
+  }));
+
+  res.json(result);
+};
+/* ===== GET ALL COMMENT (ADMIN) ===== */
+exports.getAllComment = async (req, res) => {
+  try {
+    const comments = await Comment.find()
+      .populate("user", "name email")
+      .populate("product", "name price")
+      .populate("order", "status createdAt")
+      .sort({ createdAt: -1 });
+
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+

@@ -25,5 +25,5 @@ const io = new Server(server, {
 require("./src/sockets/live.socket")(io);
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server + Socket.IO running at http://localhost:${PORT}`);
+  console.log(`Server + Socket.IO running at http://localhost:${PORT}`);
 });

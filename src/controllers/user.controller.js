@@ -1,30 +1,18 @@
-const User = require("../models/User");
 const userService = require("../services/user.service");
 
 /* ================= CREATE ================= */
 exports.createUser = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const user = await userService.createUser(req.body);
 
-    const existed = await User.findOne({
-      $or: [{ username }, { email }],
+    res.status(201).json({
+      message: "Tạo user thành công",
+      user,
     });
-    if (existed)
-      return res.status(400).json({ message: "User đã tồn tại" });
-
-    const user = await User.create({
-      username,
-      email,
-      password,
-      role,
-    });
-
-    res.json(user);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 };
-
 
 /* ================= GET ALL ================= */
 exports.getAllUsers = async (req, res) => {
@@ -53,6 +41,7 @@ exports.updateUser = async (req, res) => {
       req.params.id,
       req.body
     );
+
     res.json({
       message: "Cập nhật user thành công",
       user,

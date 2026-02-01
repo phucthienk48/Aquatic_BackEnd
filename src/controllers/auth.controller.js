@@ -23,8 +23,12 @@ class AuthController {
           id: data.user._id,
           username: data.user.username,
           email: data.user.email,
-          password: data.user.password, // ❗ hiển thị mật khẩu
           role: data.user.role,
+
+          // BẮT BUỘC THÊM
+          avatar: data.user.avatar || "",
+          phone: data.user.phone || "",
+          address: data.user.address || "",
         },
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
@@ -33,6 +37,8 @@ class AuthController {
       res.status(400).json({ message: err.message });
     }
   }
+
+
 
   async logout(req, res) {
     await AuthService.logout(req.user.id);
