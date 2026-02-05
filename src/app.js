@@ -24,6 +24,9 @@ app.use("/api/contact", require("./routes/contact.route"))
 app.use("/api/comment", require("./routes/comment.route"))
 app.use("/api/recommend", require("./routes/recommend.routes"));
 
+app.use("/api/livestream", require("./routes/livestream.routes"));
+
+
 app.get("/", (req, res) => {
   res.send("Aquatic_BackEnd is running ");
 });
