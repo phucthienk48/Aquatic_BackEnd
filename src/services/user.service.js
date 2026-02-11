@@ -1,6 +1,6 @@
 const User = require("../models/User");
 
-/* ================= CREATE ================= */
+/*  CREATE  */
 exports.createUser = async (data) => {
   const { username, email } = data;
 
@@ -25,19 +25,19 @@ exports.createUser = async (data) => {
   return await User.findById(user._id).select("-password");
 };
 
-/* ================= GET ALL ================= */
+/*  GET ALL  */
 exports.getAllUsers = async () => {
   return await User.find().select("-password");
 };
 
-/* ================= GET BY ID ================= */
+/*  GET BY ID  */
 exports.getUserById = async (id) => {
   const user = await User.findById(id).select("-password");
   if (!user) throw new Error("Không tìm thấy user");
   return user;
 };
 
-/* ================= UPDATE ================= */
+/*  UPDATE  */
 exports.updateUser = async (id, data) => {
   // Không cho update password ở API này (an toàn hơn)
   delete data.password;
@@ -60,7 +60,7 @@ exports.updateUser = async (id, data) => {
   return user;
 };
 
-/* ================= DELETE ================= */
+/*  DELETE  */
 exports.deleteUser = async (id) => {
   const user = await User.findByIdAndDelete(id);
   if (!user) throw new Error("Không tìm thấy user");

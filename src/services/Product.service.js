@@ -25,7 +25,7 @@ const deleteProduct = async (id) => {
   return await Product.findByIdAndDelete(id);
 };
 
-// 🔍 SEARCH PRODUCT
+//  SEARCH PRODUCT
 const searchProduct = async (keyword) => {
   if (!keyword) return [];
 

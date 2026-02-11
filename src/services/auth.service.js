@@ -5,11 +5,11 @@ const {
 } = require("../utils/jwt");
 
 class AuthService {
-  // ===== ĐĂNG KÝ =====
+  //  ĐĂNG KÝ
   static async register(data) {
     const { username, email, password, role, phone, address } = data;
 
-    // 1️⃣ Kiểm tra trùng email hoặc username
+    // 1️ Kiểm tra trùng email hoặc username
     const existed = await User.findOne({
       $or: [{ email }, { username }],
     });
@@ -18,19 +18,19 @@ class AuthService {
       throw new Error("Tài khoản đã tồn tại");
     }
 
-    // 2️⃣ Tạo user mới
+    // Tạo user mới
     const user = await User.create({
       username,
       email,
-      password,              // ⚠️ nếu có hash ở middleware thì OK
+      password,              
       phone: phone || "",
       address: address || "",
-      avatar: "/data/avatar.jpg", // ✅ avatar mặc định
+      avatar: "/data/avatar.jpg", 
       role: role || "user",
       isActive: true,
     });
 
-    // 3️⃣ Không trả password ra ngoài
+    // Không trả password ra ngoài
     const result = user.toObject();
     delete result.password;
 
@@ -39,7 +39,7 @@ class AuthService {
 
 
 
-    // ===== ĐĂNG NHẬP =====
+    // ĐĂNG NHẬP
   static async login(data) {
     const { email, password } = data;
 
@@ -65,7 +65,7 @@ class AuthService {
 
 
 
-  // ===== ĐĂNG XUẤT =====
+  //  ĐĂNG XUẤT 
   static async logout(userId) {
     await User.findByIdAndUpdate(userId, {
       refreshToken: null,

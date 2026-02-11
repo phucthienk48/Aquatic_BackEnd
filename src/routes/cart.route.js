@@ -12,10 +12,10 @@ router.get("/:userId", cartController.getCart);
 // Cập nhật số lượng sản phẩm
 router.put("/update", cartController.updateCart);
 
-// ❗ Xóa 1 sản phẩm khỏi giỏ
+//  Xóa 1 sản phẩm khỏi giỏ
 router.delete("/remove/:userId/:productId", cartController.removeItem);
 
-// ❗ Xóa toàn bộ giỏ hàng
+//  Xóa toàn bộ giỏ hàng
 router.delete("/clear/:userId", cartController.clearCart);
 
 module.exports = router;

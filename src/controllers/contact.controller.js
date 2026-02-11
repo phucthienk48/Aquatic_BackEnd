@@ -1,6 +1,6 @@
 const contactService = require("../services/contact.service");
 
-/* ================= GỬI LIÊN HỆ (PUBLIC) ================= */
+/*  GỬI LIÊN HỆ (PUBLIC)  */
 exports.createContact = async (req, res) => {
   try {
     const contact = await contactService.createContact(req.body);
@@ -13,7 +13,7 @@ exports.createContact = async (req, res) => {
   }
 };
 
-/* ================= ADMIN: LẤY DANH SÁCH ================= */
+/*  ADMIN: LẤY DANH SÁCH  */
 exports.getContacts = async (req, res) => {
   try {
     const contacts = await contactService.getAllContacts();
@@ -23,7 +23,7 @@ exports.getContacts = async (req, res) => {
   }
 };
 
-/* ================= CẬP NHẬT TRẠNG THÁI ================= */
+/*  CẬP NHẬT TRẠNG THÁI  */
 exports.updateStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -37,7 +37,7 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
-/* ================= XÓA ================= */
+/*  XÓA  */
 exports.deleteContact = async (req, res) => {
   try {
     await contactService.deleteContact(req.params.id);

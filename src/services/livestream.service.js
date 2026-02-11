@@ -1,53 +1,84 @@
-const LivestreamRoom = require("../models/LivestreamRoom.model");
+const Livestream = require("../models/Livestream.model");
+const CommentLive = require("../models/CommentLivestream.model");
 
 class LivestreamService {
-  static async createRoom({ title, description }) {
-    return LivestreamRoom.create({
-      title,
-      description,
-      streamKey: "live_" + Date.now(),
+  /* TẠO PHÒNG */
+  static async create(data) {
+    return Livestream.create({
+      ...data,
+      status: "ended", // mặc định chưa live
     });
   }
 
-  static async startLive(roomId) {
-    return LivestreamRoom.findByIdAndUpdate(
-      roomId,
+  /* BẮT ĐẦU LIVESTREAM */
+  static async start(id) {
+    const room = await Livestream.findById(id);
+    if (!room) return null;
+
+    return Livestream.findByIdAndUpdate(
+      id,
       {
         status: "live",
-        startTime: new Date(),
+        startedAt: new Date(),
+        endedAt: null, // reset khi start lại
       },
       { new: true }
     );
   }
 
-  static async endLive(roomId) {
-    return LivestreamRoom.findByIdAndUpdate(
-      roomId,
+  /* KẾT THÚC LIVESTREAM */
+  static async end(id) {
+    const room = await Livestream.findById(id);
+    if (!room) return null;
+
+    return Livestream.findByIdAndUpdate(
+      id,
       {
         status: "ended",
-        endTime: new Date(),
+        endedAt: new Date(),
       },
       { new: true }
     );
   }
 
-  static async pinProduct(roomId, productId) {
-    return LivestreamRoom.findByIdAndUpdate(
-      roomId,
-      { $addToSet: { pinnedProducts: productId } },
+  /*  CẬP NHẬT THÔNG TIN PHÒNG */
+  static async update(id, data) {
+    return Livestream.findByIdAndUpdate(
+      id,
+      data,
       { new: true }
     );
   }
 
-  static async getAllRooms() {
-    return LivestreamRoom.find()
-      .populate("pinnedProducts")
-      .sort({ createdAt: -1 });
+  /*  XÓA PHÒNG LIVESTREAM*/
+  static async delete(id) {
+    const room = await Livestream.findById(id);
+    if (!room) return null;
+
+    //  Không cho xóa khi đang live
+    if (room.status === "live") {
+      throw new Error("Không thể xóa phòng khi đang livestream");
+    }
+
+    //  Xóa toàn bộ comment của phòng
+    await CommentLive.deleteMany({ livestreamId: id });
+
+    //  Xóa phòng
+    return Livestream.findByIdAndDelete(id);
   }
 
-  static async getRoomById(roomId) {
-    return LivestreamRoom.findById(roomId)
-      .populate("pinnedProducts");
+  static async getAll() {
+    return Livestream.find().sort({ createdAt: -1 });
+  }
+
+  static async getLive() {
+    return Livestream.find({ status: "live" }).sort({
+      startedAt: -1,
+    });
+  }
+
+  static async getById(id) {
+    return Livestream.findById(id);
   }
 }
 

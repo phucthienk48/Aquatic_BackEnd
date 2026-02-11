@@ -1,13 +1,30 @@
-const router = require("express").Router();
-const ctrl = require("../controllers/livestream.controller");
+const express = require("express");
+const router = express.Router();
+const LivestreamController = require("../controllers/livestream.controller");
 
-router.post("/", ctrl.createRoom);
-router.get("/", ctrl.getAllRooms);
-router.get("/:id", ctrl.getRoomDetail);
+// Danh sách phòng đang live
+router.get("/live", LivestreamController.getLive);
 
-router.put("/:id/start", ctrl.startLive);
-router.put("/:id/end", ctrl.endLive);
+// Chi tiết phòng
+router.get("/:id", LivestreamController.getDetail);
 
-router.post("/:id/pin-product", ctrl.pinProduct);
+
+// Lấy tất cả phòng (live + ended)
+router.get("/", LivestreamController.getAll);
+
+// Tạo phòng
+router.post("/", LivestreamController.create);
+
+// Cập nhật phòng
+router.put("/:id", LivestreamController.update);
+
+// Start livestream
+router.put("/:id/start", LivestreamController.start);
+
+// End livestream
+router.put("/:id/end", LivestreamController.end);
+
+// Xóa phòng (chỉ khi không live)
+router.delete("/:id", LivestreamController.delete);
 
 module.exports = router;

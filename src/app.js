@@ -25,6 +25,8 @@ app.use("/api/comment", require("./routes/comment.route"))
 app.use("/api/recommend", require("./routes/recommend.routes"));
 
 app.use("/api/livestream", require("./routes/livestream.routes"));
+app.use("/api/commentlive", require("./routes/commentLivestream.routes"));
+app.use("/api/productlive", require("./routes/livestreamProduct.route"));
 
 
 app.get("/", (req, res) => {

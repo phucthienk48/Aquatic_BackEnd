@@ -6,7 +6,7 @@ class AuthController {
       const user = await AuthService.register(req.body);
       res.status(201).json({
         message: "Đăng ký thành công",
-        user, // ❗ trả về password
+        user, //  trả về password
       });
     } catch (err) {
       res.status(400).json({ message: err.message });

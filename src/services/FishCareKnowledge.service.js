@@ -1,21 +1,21 @@
 const FishCareKnowledge = require("../models/FishCareKnowledge.model");
 
-// ➕ Create
+//  Create
 const create = (data) => {
   return FishCareKnowledge.create(data);
 };
 
-// 📄 Get all
+//  Get all
 const getAll = () => {
   return FishCareKnowledge.find().sort({ createdAt: -1 });
 };
 
-// 📄 Get by knowledgeId
+//  Get by knowledgeId
 const getByKnowledgeId = (knowledgeId) => {
   return FishCareKnowledge.findOne({ knowledgeId });
 };
 
-// ✏️ Update by knowledgeId
+//  Update by knowledgeId
 const update = (knowledgeId, data) => {
   return FishCareKnowledge.findOneAndUpdate(
     { knowledgeId },
@@ -24,7 +24,7 @@ const update = (knowledgeId, data) => {
   );
 };
 
-// ❌ Delete by knowledgeId
+//  Delete by knowledgeId
 const remove = (knowledgeId) => {
   return FishCareKnowledge.findOneAndDelete({ knowledgeId });
 };

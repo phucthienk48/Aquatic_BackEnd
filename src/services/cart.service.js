@@ -1,4 +1,4 @@
-const Cart = require("../models/cart.model");
+const Cart = require("../models/Cart.model");
 const Product = require("../models/Product.model");
 
 exports.getCart = async (userId) => {
@@ -11,7 +11,6 @@ exports.addToCart = async (userId, productId, quantity = 1) => {
   const product = await Product.findById(productId);
   if (!product) throw new Error("Không tìm thấy sản phẩm");
 
-  // ✅ LẤY ẢNH ĐÚNG
   const image =
     product.images?.[0] || "data/placeholder.jpg";
 
@@ -23,7 +22,7 @@ exports.addToCart = async (userId, productId, quantity = 1) => {
           product: product._id,
           name: product.name,
           price: product.price,
-          image, // ✅ ĐÃ FIX
+          image, 
           quantity,
         },
       ],
@@ -42,7 +41,7 @@ exports.addToCart = async (userId, productId, quantity = 1) => {
       product: product._id,
       name: product.name,
       price: product.price,
-      image, // ✅ ĐÃ FIX
+      image, 
       quantity,
     });
   }

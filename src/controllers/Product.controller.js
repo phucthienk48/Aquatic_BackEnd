@@ -1,6 +1,6 @@
 const ProductService = require("../services/Product.service");
 
-// ➕ Create
+//  Create
 exports.createProduct = async (req, res) => {
   try {
     const Product = await ProductService.createProduct(req.body);
@@ -17,7 +17,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// 📄 Get all
+//  Get all
 exports.getAllProduct = async (req, res) => {
   try {
     const Productes = await ProductService.getAllProduct();
@@ -27,7 +27,7 @@ exports.getAllProduct = async (req, res) => {
   }
 };
 
-// 🔍 Get by id
+// Get by id
 exports.getProductById = async (req, res) => {
   try {
     const product = await ProductService.getProductById(req.params.id);
@@ -52,7 +52,7 @@ exports.getProductById = async (req, res) => {
 };
 
 
-// ✏️ Update
+// Update
 exports.updateProduct = async (req, res) => {
   try {
     const Product = await ProductService.updateProduct(req.params.id, req.body);
@@ -66,7 +66,7 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// ❌ Delete
+//  Delete
 exports.deleteProduct = async (req, res) => {
   try {
     await ProductService.deleteProduct(req.params.id);
@@ -78,7 +78,7 @@ exports.deleteProduct = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-// 🔎 Search product by keyword
+//  Search product by keyword
 exports.searchProduct = async (req, res) => {
   try {
     const { keyword } = req.query;

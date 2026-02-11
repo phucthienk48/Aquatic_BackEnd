@@ -28,7 +28,6 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
-    /* ===== THÔNG TIN CÁ NHÂN ===== */
     avatar: {
       type: String, // URL ảnh (Cloudinary / local)
       default: "/images/default-avatar.png",

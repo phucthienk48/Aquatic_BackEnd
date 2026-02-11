@@ -1,5 +1,5 @@
 const Order = require("../models/order.model");
-const Cart = require("../models/cart.model");
+const Cart = require("../models/Cart.model");
 
 const createOrder = async ({
   user,               // 👈 đổi userId → user
