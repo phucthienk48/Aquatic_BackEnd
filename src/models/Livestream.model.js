@@ -7,21 +7,37 @@ const LivestreamSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     description: {
       type: String,
       default: "",
     },
+
     thumbnail: {
       type: String,
       default: "",
     },
+
     status: {
       type: String,
       enum: ["pending", "live", "ended"],
       default: "pending",
     },
+
     startedAt: Date,
+
     endedAt: Date,
+
+    videoUrl: {
+      type: String,
+      default: "",
+    },
+
+    viewers: {
+      type: Number,
+      default: 0,
+    }
+
   },
   { timestamps: true }
 );

@@ -10,7 +10,10 @@ app.use(express.json());
 
 connectDB();
 
+app.use("/videos", express.static("videos"));
+
 app.use("/api/upload", require("./routes/upload.router"));
+
 
 // routes
 app.use("/api/product", require("./routes/Product.router"));
@@ -27,6 +30,7 @@ app.use("/api/recommend", require("./routes/recommend.routes"));
 app.use("/api/livestream", require("./routes/livestream.routes"));
 app.use("/api/commentlive", require("./routes/commentLivestream.routes"));
 app.use("/api/productlive", require("./routes/livestreamProduct.route"));
+
 
 
 app.get("/", (req, res) => {

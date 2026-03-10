@@ -1,84 +1,178 @@
 const CommentLive = require("../models/CommentLivestream.model");
 const Livestream = require("../models/Livestream.model");
-const Cart = require("../models/Cart.model");
+const AutoOrderService = require("../services/autoOrder.service");
 
 module.exports = (io) => {
+
+  // lưu số người xem
+  const viewerCounts = {};
+
   io.on("connection", (socket) => {
-    console.log(" User connected:", socket.id);
 
-    /* JOIN LIVESTREAM ROOM*/
+    console.log("user connected:", socket.id);
+
+    // user tham gia phòng livestream
     socket.on("joinRoom", (livestreamId) => {
+
       socket.join(livestreamId);
-      console.log(`👤 ${socket.id} joined room ${livestreamId}`);
+      socket.roomId = livestreamId;
+
+      if (!viewerCounts[livestreamId]) {
+        viewerCounts[livestreamId] = 0;
+      }
+
+      viewerCounts[livestreamId]++;
+
+      io.to(livestreamId).emit(
+        "viewerCount",
+        viewerCounts[livestreamId]
+      );
+
     });
 
-    /* start and ended livestream */
+    // user rời phòng livestream
+    socket.on("leaveRoom", (livestreamId) => {
+
+      socket.leave(livestreamId);
+
+      if (viewerCounts[livestreamId] && viewerCounts[livestreamId] > 0) {
+        viewerCounts[livestreamId]--;
+      }
+
+      io.to(livestreamId).emit(
+        "viewerCount",
+        viewerCounts[livestreamId]
+      );
+
+    });
+
+    // admin bắt đầu livestream
     socket.on("startLivestream", async (livestreamId) => {
-      await Livestream.findByIdAndUpdate(livestreamId, {
-        status: "live",
-        startedAt: new Date(),
-      });
 
-      io.to(livestreamId).emit("livestreamStarted", {
-        livestreamId,
-        status: "live",
-      });
-    });
-
-    socket.on("endLivestream", async (livestreamId) => {
-      await Livestream.findByIdAndUpdate(livestreamId, {
-        status: "ended",
-        endedAt: new Date(),
-      });
-
-      io.to(livestreamId).emit("livestreamEnded", {
-        livestreamId,
-        status: "ended",
-      });
-    });
-
-    
-    /* SEND COMMENT  */
-    socket.on("sendComment", async (data) => {
       try {
+
+        await Livestream.findByIdAndUpdate(livestreamId, {
+          status: "live",
+          startedAt: new Date(),
+        });
+
+        io.to(livestreamId).emit("livestreamStarted", {
+          livestreamId,
+        });
+
+        console.log("livestream started:", livestreamId);
+
+      } catch (err) {
+        console.error("start livestream error:", err);
+      }
+
+    });
+
+    // nhận video từ admin và phát cho viewer
+    socket.on("streamVideo", ({ livestreamId, chunk }) => {
+
+      const buffer = Buffer.from(chunk);
+
+      io.to(livestreamId).emit("receiveVideo", buffer);
+
+    });
+
+    // admin kết thúc livestream
+    socket.on("endLivestream", async (livestreamId) => {
+
+      try {
+
+        await Livestream.findByIdAndUpdate(livestreamId, {
+          status: "ended",
+          endedAt: new Date(),
+        });
+
+        io.to(livestreamId).emit("livestreamEnded", {
+          livestreamId,
+        });
+
+      } catch (err) {
+        console.error("end livestream error:", err);
+      }
+
+    });
+
+    // gửi comment và xử lý chốt đơn
+    socket.on("sendComment", async (data) => {
+
+      try {
+
         const { livestreamId, userId, content } = data;
 
-        // Lưu DB
         const comment = await CommentLive.create({
           livestreamId,
           user: userId,
           content,
         });
 
-        // Populate user (nếu cần)
         const populatedComment = await comment.populate(
           "user",
-          "name avatar"
+          "username avatar"
         );
 
-        // Phát realtime cho cả room
         io.to(livestreamId).emit(
           "newComment",
           populatedComment
         );
+
+        const order = await AutoOrderService.handle({
+          livestreamId,
+          userId,
+          content,
+        });
+
+        if (order) {
+
+          socket.emit("autoOrderSuccess", {
+            message: "chốt đơn thành công",
+            orderId: order._id,
+            totalPrice: order.totalPrice,
+          });
+
+        }
+
       } catch (err) {
-        console.error(" Comment error:", err.message);
+        console.error("comment error:", err);
       }
+
     });
 
-    /* product livestream */
+    // cập nhật sản phẩm livestream
     socket.on("updateLiveProduct", (data) => {
-      const { livestreamId, action, productId } = data;
 
-      io.to(livestreamId).emit("updateLiveProducts", {
-        livestreamId,
-        action,
-        productId,
-      });
+      const { livestreamId } = data;
+
+      io.to(livestreamId).emit(
+        "updateLiveProducts",
+        data
+      );
+
     });
 
+    // khi user disconnect
     socket.on("disconnect", () => {
-      console.log(" User disconnected:", socket.id);
+
+      const livestreamId = socket.roomId;
+
+      if (livestreamId && viewerCounts[livestreamId] && viewerCounts[livestreamId] > 0) {
+
+        viewerCounts[livestreamId]--;
+
+        io.to(livestreamId).emit(
+          "viewerCount",
+          viewerCounts[livestreamId]
+        );
+
+      }
+
+      console.log("user disconnected:", socket.id);
+
     });
+
   });
 };
