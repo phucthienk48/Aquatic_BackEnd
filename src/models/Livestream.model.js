@@ -33,11 +33,6 @@ const LivestreamSchema = new mongoose.Schema(
       default: "",
     },
 
-    viewers: {
-      type: Number,
-      default: 0,
-    }
-
   },
   { timestamps: true }
 );

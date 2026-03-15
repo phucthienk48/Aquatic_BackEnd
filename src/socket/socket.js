@@ -2,16 +2,16 @@ const CommentLive = require("../models/CommentLivestream.model");
 const Livestream = require("../models/Livestream.model");
 const AutoOrderService = require("../services/autoOrder.service");
 
+const livestreamCameraService = require("../services/LivestreamCamera.service");
+
 module.exports = (io) => {
 
-  // lưu số người xem
   const viewerCounts = {};
 
   io.on("connection", (socket) => {
 
     console.log("user connected:", socket.id);
 
-    // user tham gia phòng livestream
     socket.on("joinRoom", (livestreamId) => {
 
       socket.join(livestreamId);
@@ -28,25 +28,57 @@ module.exports = (io) => {
         viewerCounts[livestreamId]
       );
 
+      const chunks = livestreamCameraService.getChunks(livestreamId);
+
+      if (!chunks || chunks.length === 0) return;
+
+      // chỉ lấy 3 chunk mới nhất để sync realtime
+      const latestChunks = chunks.slice(-3);
+
+      // delay để MediaSource phía client ready
+      setTimeout(() => {
+
+        latestChunks.forEach((chunk, index) => {
+
+          setTimeout(() => {
+
+            socket.emit("receiveVideo", chunk);
+
+          }, index * 50);
+
+        });
+
+      }, 400);
+
     });
 
-    // user rời phòng livestream
+
+    // =========================
+    // LEAVE ROOM
+    // =========================
     socket.on("leaveRoom", (livestreamId) => {
 
       socket.leave(livestreamId);
 
-      if (viewerCounts[livestreamId] && viewerCounts[livestreamId] > 0) {
+      if (
+        viewerCounts[livestreamId] &&
+        viewerCounts[livestreamId] > 0
+      ) {
         viewerCounts[livestreamId]--;
       }
 
       io.to(livestreamId).emit(
         "viewerCount",
-        viewerCounts[livestreamId]
+        viewerCounts[livestreamId] || 0
       );
 
     });
 
-    // admin bắt đầu livestream
+
+
+    // =========================
+    // START LIVESTREAM
+    // =========================
     socket.on("startLivestream", async (livestreamId) => {
 
       try {
@@ -63,41 +95,85 @@ module.exports = (io) => {
         console.log("livestream started:", livestreamId);
 
       } catch (err) {
+
         console.error("start livestream error:", err);
+
       }
 
     });
 
-    // nhận video từ admin và phát cho viewer
+
+
+    // =========================
+    // STREAM VIDEO
+    // =========================
     socket.on("streamVideo", ({ livestreamId, chunk }) => {
 
       const buffer = Buffer.from(chunk);
 
-      io.to(livestreamId).emit("receiveVideo", buffer);
+      livestreamCameraService.saveChunk(
+        livestreamId,
+        buffer
+      );
+
+      io.to(livestreamId).emit(
+        "receiveVideo",
+        buffer
+      );
 
     });
 
-    // admin kết thúc livestream
-    socket.on("endLivestream", async (livestreamId) => {
+
+
+    // =========================
+    // END LIVESTREAM
+    // =========================
+    socket.on("endLivestream", async (data) => {
 
       try {
 
-        await Livestream.findByIdAndUpdate(livestreamId, {
-          status: "ended",
-          endedAt: new Date(),
-        });
+        const livestreamId = data.livestreamId || data;
 
-        io.to(livestreamId).emit("livestreamEnded", {
+        // cập nhật trạng thái livestream
+        await Livestream.findByIdAndUpdate(
           livestreamId,
-        });
+          {
+            status: "ended",
+            endedAt: new Date()
+          }
+        );
+
+        // tắt camera
+        await livestreamCameraService.stopCamera(
+          livestreamId
+        );
+
+        // xoá toàn bộ chunk video
+        livestreamCameraService.deleteChunks(
+          livestreamId
+        );
+
+        // gửi sự kiện cho viewer
+        io.to(livestreamId).emit(
+          "livestreamEnded",
+          { livestreamId }
+        );
+
+        console.log("livestream ended:", livestreamId);
 
       } catch (err) {
+
         console.error("end livestream error:", err);
+
       }
 
     });
 
-    // gửi comment và xử lý chốt đơn
+
+
+    // =========================
+    // COMMENT
+    // =========================
     socket.on("sendComment", async (data) => {
 
       try {
@@ -137,12 +213,18 @@ module.exports = (io) => {
         }
 
       } catch (err) {
+
         console.error("comment error:", err);
+
       }
 
     });
 
-    // cập nhật sản phẩm livestream
+
+
+    // =========================
+    // PIN PRODUCT
+    // =========================
     socket.on("updateLiveProduct", (data) => {
 
       const { livestreamId } = data;
@@ -154,12 +236,20 @@ module.exports = (io) => {
 
     });
 
-    // khi user disconnect
+
+
+    // =========================
+    // DISCONNECT
+    // =========================
     socket.on("disconnect", () => {
 
       const livestreamId = socket.roomId;
 
-      if (livestreamId && viewerCounts[livestreamId] && viewerCounts[livestreamId] > 0) {
+      if (
+        livestreamId &&
+        viewerCounts[livestreamId] &&
+        viewerCounts[livestreamId] > 0
+      ) {
 
         viewerCounts[livestreamId]--;
 
@@ -175,4 +265,5 @@ module.exports = (io) => {
     });
 
   });
+
 };
