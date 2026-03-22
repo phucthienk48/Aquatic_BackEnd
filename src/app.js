@@ -31,7 +31,7 @@ app.use("/api/livestream", require("./routes/livestream.routes"));
 app.use("/api/commentlive", require("./routes/commentLivestream.routes"));
 app.use("/api/productlive", require("./routes/livestreamProduct.route"));
 app.use("/api/camera", require("./routes/livestreamCamera.routes"));
-
+app.use("/api/chat", require("./routes/chat"));
 
 
 app.get("/", (req, res) => {
