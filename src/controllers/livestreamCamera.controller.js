@@ -56,7 +56,15 @@ exports.stopCamera = async (req, res) => {
 
 };
 
-
+exports.getStatus = async (req, res) => {
+  try {
+    const { livestreamId } = req.params;
+    const isCameraOn = await livestreamCameraService.getStatus(livestreamId);
+    res.json({ success: true, isCameraOn });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 exports.getChunks = async (req, res) => {
 

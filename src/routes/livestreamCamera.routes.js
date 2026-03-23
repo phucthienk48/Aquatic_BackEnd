@@ -24,6 +24,12 @@ router.get(
   controller.getChunks
 );
 
+// get camera status
+router.get(
+  "/status/:livestreamId",
+  controller.getStatus
+);
+
 // delete chunks
 router.delete(
   "/chunks/:livestreamId",

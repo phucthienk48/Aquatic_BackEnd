@@ -10,7 +10,8 @@ app.use(express.json());
 
 connectDB();
 
-app.use("/videos", express.static("videos"));
+const path = require("path");
+app.use("/videos", express.static(path.join(__dirname, "videos")));
 
 app.use("/api/upload", require("./routes/upload.router"));
 

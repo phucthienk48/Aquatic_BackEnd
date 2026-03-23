@@ -65,15 +65,12 @@ class LivestreamCameraService {
 
       fs.writeFileSync(filePath, chunk);
 
-      // giữ tối đa 30 chunk
+      // giữ tối đa 30 chunk, LUÔN BẢO TOÀN CHUNK ĐẦU TIÊN (Header) tại index 0 !
       const files = fs.readdirSync(streamFolder).sort();
 
-      if (files.length > 50) {
-
-        const oldFile = files[0];
-
-        fs.unlinkSync(path.join(streamFolder, oldFile));
-
+      if (files.length > 30) {
+        const oldFile = files[1]; // Xóa phần tử thứ 2, giữ lại thẻ 0
+        if (oldFile) fs.unlinkSync(path.join(streamFolder, oldFile));
       }
 
       return filePath;
@@ -96,17 +93,32 @@ class LivestreamCameraService {
 
       const files = fs.readdirSync(streamFolder).sort();
 
-      const latestFiles = files.slice(-10);
+      // Lấy 10 file gần nhất để live (giảm trễ)
+      let latestFiles = files.slice(-10);
+
+      // Nếu 10 file này đã bị đẩy ra khỏi index 0, BẮT BUỘC chèn chunk Header (files[0]) vào
+      if (files.length > 10 && !latestFiles.includes(files[0])) {
+         latestFiles.unshift(files[0]);
+      }
+
+      // User requested newest chunks at the top (index 0). Header goes to the bottom.
+      latestFiles.reverse();
 
       return latestFiles.map(file => {
-
-        const filePath = path.join(streamFolder, file);
-
-        return fs.readFileSync(filePath);
-
+        return { url: `/videos/${livestreamId}/${file}` };
       });
 
     }
+
+
+  // ======================
+  // GET STATUS
+  // ======================
+  async getStatus(livestreamId) {
+    const camera = await LivestreamCamera.findOne({ livestreamId });
+    if (!camera) return false;
+    return camera.isCameraOn;
+  }
 
 
   // ======================
