@@ -3,9 +3,8 @@ const Cart = require("../models/Cart.model");
 const Order = require("../models/order.model");
 const Comment = require("../models/Comment.model");
 
-/*  GỢI Ý CHO KHÁCH (CHƯA ĐĂNG NHẬP) */
+/* 1. GUEST (CHƯA LOGIN)*/
 const getGuestRecommendProducts = async (limit = 16) => {
-  // Ưu tiên cá bán chạy
   let products = await Product.find({
     status: "available",
     type: "fish",
@@ -13,7 +12,6 @@ const getGuestRecommendProducts = async (limit = 16) => {
     .sort({ sold: -1, createdAt: -1 })
     .limit(limit);
 
-  // Bù thêm nếu thiếu
   if (products.length < limit) {
     const more = await Product.find({
       status: "available",
@@ -28,10 +26,21 @@ const getGuestRecommendProducts = async (limit = 16) => {
   return products;
 };
 
-/* 
-   2 GỢI Ý PHỔ BIẾN THEO CỘNG ĐỒNG (MỚI)
-   → dùng khi user quá ít dữ liệu
- */
+/*2. USER MỚI*/
+const getNewUserRecommend = async (limit = 12) => {
+  return Product.find({
+    status: "available",
+    type: "fish",
+  })
+    .sort({
+      sold: -1,
+      ratingAvg: -1,
+      createdAt: -1,
+    })
+    .limit(limit);
+};
+
+/* 3. TRENDING*/
 const getTrendingProducts = async (excludeIds = [], limit = 12) => {
   return Product.find({
     status: "available",
@@ -39,17 +48,58 @@ const getTrendingProducts = async (excludeIds = [], limit = 12) => {
   })
     .sort({
       sold: -1,
-      ratingAvg: -1, // nếu có
+      ratingAvg: -1,
       createdAt: -1,
     })
     .limit(limit);
 };
 
+/*  4. TOP RATED*/
+const getTopRatedProducts = async (excludeIds = [], limit = 8) => {
+  return Product.find({
+    status: "available",
+    _id: { $nin: excludeIds },
+    ratingAvg: { $gte: 4 },
+  })
+    .sort({ ratingAvg: -1, sold: -1 })
+    .limit(limit);
+};
+
+/* 5. NEW ARRIVAL*/
+const getNewProducts = async (excludeIds = [], limit = 8) => {
+  return Product.find({
+    status: "available",
+    _id: { $nin: excludeIds },
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+};
+
+/* 6. SPECIES (QUAN TRỌNG)*/
+const getSpeciesBasedRecommend = async (
+  speciesList = [],
+  excludeIds = [],
+  limit = 10
+) => {
+  if (!speciesList.length) return [];
+
+  return Product.find({
+    status: "available",
+    _id: { $nin: excludeIds },
+    species: { $in: speciesList },
+  })
+    .sort({
+      sold: -1,
+      ratingAvg: -1,
+    })
+    .limit(limit);
+};
+
 /* 
-   3️ GỢI Ý CHO USER ĐÃ ĐĂNG NHẬP (CHÍNH)
- */
-exports.getRecommendProducts = async (userId, limit = 16) => {
-  /*  KHÁCH  */
+   7. MAIN FUNCTION
+*/
+exports.getRecommendProducts = async (userId, limit = 12) => {
+  /* KHÁCH */
   if (!userId) {
     return await getGuestRecommendProducts(limit);
   }
@@ -59,7 +109,7 @@ exports.getRecommendProducts = async (userId, limit = 16) => {
   const speciesSet = new Set();
   let hasBoughtFish = false;
 
-  /*  CART  */
+  /* CART */
   const cart = await Cart.findOne({ user: userId }).populate({
     path: "items.product",
     select: "type species",
@@ -75,7 +125,7 @@ exports.getRecommendProducts = async (userId, limit = 16) => {
     });
   }
 
-  /*  ORDER  */
+  /* ORDER */
   const orders = await Order.find({
     user: userId,
     status: "hoàn thành",
@@ -94,7 +144,15 @@ exports.getRecommendProducts = async (userId, limit = 16) => {
     });
   });
 
-  /*  COMMENT XẤU (LOẠI TRỪ)  */
+  /* USER MỚI */
+  const isNewUser =
+    (!cart || !cart.items.length) && orders.length === 0;
+
+  if (isNewUser) {
+    return await getNewUserRecommend(limit);
+  }
+
+  /* DISLIKE */
   const badIds = await Comment.find({
     user: userId,
     rating: { $lte: 2 },
@@ -102,27 +160,43 @@ exports.getRecommendProducts = async (userId, limit = 16) => {
 
   badIds.forEach(id => excludeIds.add(id.toString()));
 
-  /*  ƯU TIÊN LOẠI  */
+  /* PRIORITY TYPE */
   let priorityTypes = [...typeSet];
 
-  // Nếu đã mua cá → gợi ý thuốc + thiết bị + thức ăn
   if (hasBoughtFish) {
     priorityTypes = ["medicine", "equipment", "food"];
   }
 
-  /*  QUERY GỢI Ý CÁ NHÂN  */
-  let recommend = await Product.find({
-    status: "available",
-    _id: { $nin: [...excludeIds] },
-    $or: [
-      { type: { $in: priorityTypes } },
-      { species: { $in: [...speciesSet] } },
-    ],
-  })
-    .sort({ sold: -1, createdAt: -1 })
-    .limit(limit);
+  let recommend = [];
 
-  /*  GỢI Ý TRENDING (MỚI)  */
+  /* 1. ƯU TIÊN SPECIES */
+  const speciesRecommend = await getSpeciesBasedRecommend(
+    [...speciesSet],
+    [...excludeIds],
+    limit
+  );
+
+  recommend = [...speciesRecommend];
+
+  /* 2. THEO TYPE + SPECIES */
+  if (recommend.length < limit) {
+    const more = await Product.find({
+      status: "available",
+      _id: {
+        $nin: [...excludeIds, ...recommend.map(p => p._id)],
+      },
+      $or: [
+        { type: { $in: priorityTypes } },
+        { species: { $in: [...speciesSet] } },
+      ],
+    })
+      .sort({ sold: -1, createdAt: -1 })
+      .limit(limit - recommend.length);
+
+    recommend = [...recommend, ...more];
+  }
+
+  /* 3. TRENDING */
   if (recommend.length < limit) {
     const trending = await getTrendingProducts(
       [...excludeIds, ...recommend.map(p => p._id)],
@@ -130,6 +204,25 @@ exports.getRecommendProducts = async (userId, limit = 16) => {
     );
 
     recommend = [...recommend, ...trending];
+  }
+
+  /* 4. TOP RATED + NEW */
+  if (recommend.length < limit) {
+    const needed = limit - recommend.length;
+
+    const [topRated, newProducts] = await Promise.all([
+      getTopRatedProducts(
+        [...excludeIds, ...recommend.map(p => p._id)],
+        needed
+      ),
+      getNewProducts(
+        [...excludeIds, ...recommend.map(p => p._id)],
+        needed
+      ),
+    ]);
+
+    const extra = [...topRated, ...newProducts].slice(0, needed);
+    recommend = [...recommend, ...extra];
   }
 
   return recommend;
